@@ -8,13 +8,13 @@ Este projeto foi desenhado para ser o material de apoio do vídeo "Descomplicand
 
 ## O que você vai aprender
 
-Neste nível básico você aprenderá:
+Neste projeto você aprenderá:
 
 - **Estrutura de um workflow**: jobs, steps, actions do marketplace
 - **Como usar actions prontas**: `actions/checkout`, `actions/setup-node`
-- **Executar comandos**: instalação de dependências, build, testes básicos
+- **Executar comandos**: instalação de dependências, build, testes e cobertura
 - **Health checks**: verificar se sua aplicação está funcionando
-- **Artefatos**: gerar certificados de conclusão
+- **Artefatos**: gerar certificados de conclusão dos níveis 1 e 2
 
 ## Como Começar
 
@@ -47,21 +47,29 @@ Neste nível básico você aprenderá:
     - Faça commit e push
     - Vá para a aba "Actions" e veja seu primeiro workflow rodando!
 
-## O que acontece no Workflow?
+## O que acontece nos Workflows?
 
-O arquivo `01-basic-ci.yml` demonstra:
+O arquivo `01-basic-ci.yml` (Nível 1) demonstra:
 
 1. **Setup do Ambiente**: Configuração do Node.js
 2. **Verificação da Estrutura**: Validação dos arquivos do projeto
 3. **Build**: Executar o comando de build
 4. **Health Check**: Testar se a aplicação inicia corretamente
-5. **Certificado**: Gerar um artefato com seu certificado de conclusão
+5. **Certificado**: Gerar um artefato com seu certificado de conclusão (level-1-certificate)
 
-## Badge Conquistado
+O arquivo `02-tests-ci.yml` (Nível 2) demonstra:
 
-Ao completar este workflow com sucesso, você ganha o badge:
+1. **Testes Automatizados**: Executar Jest com cobertura
+2. **Cobertura Mínima**: Validar cobertura mínima definida por `COVERAGE_MIN` (80%)
+3. **Certificado**: Gerar um artefato com seu certificado do nível 2 (level-2-certificate)
+
+## Badges Conquistados
+
+Ao completar cada workflow com sucesso, você ganha os badges:
 
 ![Desafio 01 Concluído](https://img.shields.io/badge/Desafio_01-Concluído-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white)
+
+![Desafio 02 Concluído](https://img.shields.io/badge/Desafio_02-Concluído-8a2be2?style=for-the-badge&logo=github&logoColor=white)
 
 ## Entendendo o Código
 

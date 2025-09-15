@@ -1,7 +1,7 @@
 // Configuração da aplicação
 const API_BASE = window.location.origin;
 
-// Definição do desafio básico
+// Definição dos desafios
 const challenges = [
     {
         id: 'first-steps',
@@ -9,6 +9,13 @@ const challenges = [
         description: 'Configure seu primeiro GitHub Action com um workflow básico de CI. Aprenda os conceitos fundamentais e execute seu primeiro build automatizado.',
         badge: 'first-steps',
         reward: 'Badge: Desafio 01 Concluído'
+    },
+    {
+        id: 'testes-automatizados',
+        title: 'Desafio 02 - Testes Automatizados',
+        description: 'Implemente testes com Jest e atinja cobertura mínima de 80% no pipeline. Gere e faça upload do certificado do nível 2.',
+        badge: 'testes-automatizados',
+        reward: 'Badge: Desafio 02 Concluído'
     }
 ];
 
@@ -18,6 +25,8 @@ let appState = {
     badges: [],
     stats: {}
 };
+
+let selectedCertificateLevel = null;
 
 // Inicialização da aplicação
 document.addEventListener('DOMContentLoaded', async () => {
@@ -185,7 +194,7 @@ function renderBadges() {
         const isEarned = appState.badges.includes(badgeId);
 
         return `
-            <div class="badge-card ${isEarned ? 'earned' : ''}">
+            <div class="badge-card ${isEarned ? 'earned' : ''}" style="cursor: ${isEarned ? 'pointer' : 'not-allowed'};" onclick="${isEarned ? `onBadgeClick('${badgeId}')` : ''}">
                 <div class="badge-visual">
                     ${isEarned ? `
                         <div class="badge-earned">
@@ -220,10 +229,10 @@ function updateBadgesDisplay() {
 // Atualizar seção do certificado
 function updateCertificateSection() {
     const certificateSection = document.getElementById('certificateSection');
-    const hasFirstStepsBadge = appState.badges.includes('first-steps');
+    const hasAnyCertificate = appState.badges.includes('first-steps') || appState.badges.includes('testes-automatizados');
 
     if (certificateSection) {
-        certificateSection.style.display = hasFirstStepsBadge ? 'block' : 'none';
+        certificateSection.style.display = hasAnyCertificate ? 'block' : 'none';
     }
 }
 
@@ -331,16 +340,17 @@ async function checkGitHubStatus(username, repository) {
         const result = await response.json();
 
         if (response.ok) {
-            if (result.badgeEarned || result.certificateReady) {
-                showNotification('Parabéns! Seu workflow foi executado com sucesso!', 'success');
-                await loadProgress(); // Recarregar dados atualizados
-
-                // Gerar certificado automaticamente
+            const hadUpdate = Array.isArray(result.earnedBadges) ? result.earnedBadges.length > 0 : (result.badgeEarned || result.certificateReady);
+            if (hadUpdate) {
+                showNotification('Progresso atualizado com sucesso!', 'success');
+                await loadProgress();
                 const usernameForCert = result.username || username;
+                const level = result.level || (result.earnedBadges && result.earnedBadges.includes('testes-automatizados') ? 2 : 1);
                 document.getElementById('certificateUsername').value = usernameForCert;
-                setTimeout(() => generateCertificate(), 1000); // Delay para garantir que o DOM foi atualizado
+                selectedCertificateLevel = level;
+                setTimeout(() => generateCertificate(), 500);
             } else {
-                showNotification('Execute o workflow no GitHub Actions para ganhar seu badge!', 'warning');
+                showNotification(result.message || 'Nenhuma atualização encontrada.', 'info');
             }
         } else {
             showNotification(result.error || 'Erro ao verificar GitHub', 'error');
@@ -387,6 +397,30 @@ window.checkMyProgress = async function () {
     const username = document.getElementById('githubUsername').value.trim();
     const repository = document.getElementById('githubRepo').value.trim();
 
+    // Reset seleção e certificado ao trocar de usuário
+    const currentCertUser = document.getElementById('certificateUsername').value.trim();
+    if (currentCertUser && currentCertUser !== username) {
+        selectedCertificateLevel = null;
+        const certificatePreview = document.getElementById('certificatePreview');
+        if (certificatePreview) certificatePreview.innerHTML = '';
+        document.getElementById('downloadBtn').disabled = true;
+    }
+
+    // Sempre sincronizar campo do certificado com o usuário que será verificado
+    const certInput = document.getElementById('certificateUsername');
+    if (certInput) certInput.value = username;
+
+    // Reset total do estado local para evitar resquícios (badges, preview, stats serão recarregados)
+    appState.badges = [];
+    appState.progress = null;
+    updateBadgesDisplay();
+    updateChallengesStatus();
+    const certificatePreview = document.getElementById('certificatePreview');
+    if (certificatePreview) certificatePreview.innerHTML = '';
+    const downloadBtn = document.getElementById('downloadBtn');
+    if (downloadBtn) downloadBtn.disabled = true;
+    selectedCertificateLevel = null;
+
     if (!username) {
         showNotification('Por favor, informe seu usuário do GitHub', 'warning');
         return;
@@ -397,6 +431,16 @@ window.checkMyProgress = async function () {
         return;
     }
 
+    // Resetar estado no servidor antes de verificar novo usuário
+    try {
+        await fetch(`${API_BASE}/api/reset`, { method: 'POST' });
+    } catch (_) {
+    }
+
+    // Recarrega UI limpa do servidor
+    await loadProgress();
+
+    // Verificar progresso do usuário atual
     await checkGitHubStatus(username, repository);
 };
 
@@ -426,13 +470,14 @@ async function generateCertificate() {
         return;
     }
 
-    if (!appState.badges.includes('first-steps')) {
-        showNotification('Complete o desafio primeiro para gerar seu certificado!', 'error');
+    if (!appState.badges.includes('first-steps') && !appState.badges.includes('testes-automatizados')) {
+        showNotification('Complete um desafio primeiro para gerar seu certificado!', 'error');
         return;
     }
 
     try {
-        const response = await fetch(`${API_BASE}/api/certificate/${username}`);
+        const levelQuery = selectedCertificateLevel ? `?level=${selectedCertificateLevel}` : '';
+        const response = await fetch(`${API_BASE}/api/certificate/${username}${levelQuery}`);
 
         if (response.ok) {
             const svgContent = await response.text();
@@ -458,7 +503,8 @@ function downloadCertificate() {
     if (!username) return;
 
     const link = document.createElement('a');
-    link.href = `${API_BASE}/api/certificate/${username}`;
+    const levelQuery = selectedCertificateLevel ? `?level=${selectedCertificateLevel}` : '';
+    link.href = `${API_BASE}/api/certificate/${username}${levelQuery}`;
     link.download = `certificado-${username}-descomplicando-github-actions.svg`;
     document.body.appendChild(link);
     link.click();
@@ -469,6 +515,11 @@ function downloadCertificate() {
 
 
 // Exposar funções globalmente para debug
+window.selectCertificateLevel = function(level) {
+    selectedCertificateLevel = level;
+    generateCertificate();
+}
+
 window.devopsLearning = {
     simulateProgress,
     resetProgress,
@@ -476,7 +527,8 @@ window.devopsLearning = {
     checkGitHubStatus,
     generateCertificate,
     downloadCertificate,
-    appState
+    appState,
+    selectCertificateLevel
 };
 
 // Log de inicialização
@@ -493,8 +545,16 @@ Comandos disponíveis no console:
 - devopsLearning.checkGitHubStatus('usuario', 'repo') - Verificar GitHub
 - devopsLearning.appState - Ver estado atual
 
-Badge disponível: first-steps
+Badges disponíveis: first-steps, testes-automatizados
 
 ✨ AUTOMÁTICO: Execute o workflow no GitHub e veja seu badge aparecer automaticamente!
 `);
+
+window.onBadgeClick = function(badgeId) {
+    const username = document.getElementById('certificateUsername').value.trim();
+    if (!username) return;
+    const level = badgeId === 'testes-automatizados' ? 2 : 1;
+    selectedCertificateLevel = level;
+    generateCertificate();
+}
 
