@@ -13,6 +13,8 @@ jobs:
   tests-and-coverage:
     name: "Testes e Cobertura"
     runs-on: ubuntu-latest
+    outputs:
+      coverage: ${{ steps.coverage.outputs.coverage }}
 
     steps:
       - name: "Checkout do código"
@@ -23,11 +25,18 @@ jobs:
       ###
       ###
 
+      - name: "Extrair porcentagem de cobertura" # Esse step será validado pelo desafio, não altere o nome. No final, ele deve gerar o output "coverage" com a porcentagem de cobertura.
+        id: coverage
+        run: |
+          COVERAGE=$(npx nyc report --reporter=text-summary | grep -oP 'Statements\s*:\s*\K[0-9\.]+(?=%)' | head -1)
+          echo "Coverage: $COVERAGE%"
+          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+
   generate-certificate: # DAQUI PARA BAIXO, NÃO ALTERAR
       name: "Desafio Nível 2 - Certificado"
       runs-on: ubuntu-latest
       needs: tests-and-coverage
-      if: success()
+      if: success() && needs.tests-and-coverage.outputs.coverage != ''
 
       steps:
         - name: "Gerar certificado"
