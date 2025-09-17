@@ -26,7 +26,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: "Instalar Deps"
-        run: npm cli
+        run: npm ci
         
       - name: "Executar tests"
         run: npm run tests  
