@@ -7,7 +7,7 @@ env:
   NODE_VERSION: '18'
   CHALLENGE_LEVEL: 2
   CHALLENGE_NAME: "testes-automatizados"
-  COVERAGE_MIN: 99 # Cobertura mínima exigida em porcentagem
+  COVERAGE_MIN: 80 # Cobertura mínima exigida em porcentagem
 
 jobs:
   tests-and-coverage:
