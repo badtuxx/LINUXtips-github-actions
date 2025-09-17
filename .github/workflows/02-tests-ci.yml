@@ -1,0 +1,78 @@
+name: "Nível 2: Testes Automatizados"
+on:
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18'
+  CHALLENGE_LEVEL: 2
+  CHALLENGE_NAME: "testes-automatizados"
+  COVERAGE_MIN: 80 # Cobertura mínima exigida em porcentagem
+
+jobs:
+  tests-and-coverage:
+    name: "Testes e Cobertura"
+    runs-on: ubuntu-latest
+    outputs:
+      coverage: ${{ steps.coverage.outputs.coverage }}
+
+    steps:
+      - name: "Checkout do código"
+        uses: actions/checkout@v4
+
+      # INSIRA AQUI A LÓGICA PARA RODAR OS TESTES E VERIFICAR A COBERTURA
+      ###
+      ###
+      ###
+
+      - name: "Extrair porcentagem de cobertura" # Esse step será validado pelo desafio, não altere o nome. No final, ele deve gerar o output "coverage" com a porcentagem de cobertura.
+        id: coverage
+        run: |
+          COVERAGE=$(npx nyc report --reporter=text-summary | grep -oP 'Statements\s*:\s*\K[0-9\.]+(?=%)' | head -1)
+          echo "Coverage: $COVERAGE%"
+          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+
+  generate-certificate: # DAQUI PARA BAIXO, NÃO ALTERAR
+      name: "Desafio Nível 2 - Certificado"
+      runs-on: ubuntu-latest
+      needs: tests-and-coverage
+      if: success() && needs.tests-and-coverage.outputs.coverage != ''
+
+      steps:
+        - name: "Gerar certificado"
+          run: |
+            mkdir -p certificates
+            cat > certificates/level-2-certificate.md << EOF
+            # Certificado de Conclusão - Nível 2
+
+            **Descomplicando Github Actions - GitHub Actions Edition**
+            ---
+
+            Este certificado atesta que **${{ github.actor }}** concluiu com sucesso:
+            ## Nível 2: Testes Automatizados
+
+            **Competências desenvolvidas:**
+            - Automação de testes
+            - Análise de cobertura
+            - Lógica de validação com coverage mínimo
+            - Upload de artefatos
+
+            **Cobertura:** >= ${{ env.COVERAGE_MIN }}%
+            **Data de conclusão:** $(date)
+            **Repositório:** ${{ github.repository }}
+            **Workflow:** ${{ github.run_id }}
+
+            ---
+            **Badge conquistado:** Testes Automatizados
+
+            ---
+            *Certificado gerado automaticamente pelo GitHub Actions*
+            *LINUXtips*
+            EOF
+
+        - name: "Upload do certificado"
+          uses: actions/upload-artifact@v4
+          with:
+            name: level-2-certificate
+            path: certificates/
+            retention-days: 30

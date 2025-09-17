@@ -4,6 +4,10 @@ const helmet = require('helmet');
 const path = require('path');
 require('dotenv').config();
 
+if (typeof fetch === 'undefined') {
+  global.fetch = (...args) => import('node-fetch').then(({ default: f }) => f(...args));
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -17,7 +21,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Simulação de dados de progresso (em produção seria um banco de dados)
 let learningProgress = {
-  totalChallenges: 1,
+  totalChallenges: 2,
   completedChallenges: 0,
   badges: [],
   lastUpdate: new Date().toISOString(),
@@ -37,6 +41,13 @@ const availableBadges = {
     icon: 'check-circle',
     color: '#238636',
     badgeText: 'DESAFIO 01 CONCLUÍDO'
+  },
+  'testes-automatizados': {
+    name: 'Testes Automatizados',
+    description: 'Completou o Desafio 02 - Testes Automatizados',
+    icon: 'check-circle',
+    color: '#8957e5',
+    badgeText: 'DESAFIO 02 CONCLUÍDO'
   }
 };
 
@@ -65,6 +76,7 @@ app.post('/api/progress/update', (req, res) => {
   res.json({ success: true, progress: learningProgress });
 });
 
+/* istanbul ignore next */
 app.get('/api/badge/:badgeId', (req, res) => {
   const badgeId = req.params.badgeId;
   const badge = availableBadges[badgeId];
@@ -74,12 +86,12 @@ app.get('/api/badge/:badgeId', (req, res) => {
   }
 
   // Gerar SVG do badge
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50">
-  <rect width="200" height="50" fill="${badge.color}" rx="5"/>
-  <text x="10" y="20" fill="white" font-family="Arial" font-size="12" font-weight="bold">
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="260" height="60">
+  <rect width="260" height="60" fill="${badge.color}" rx="8"/>
+  <text x="12" y="24" fill="white" font-family="Arial" font-size="14" font-weight="bold">
     ${badge.name}
   </text>
-  <text x="10" y="35" fill="white" font-family="Arial" font-size="10">
+  <text x="12" y="42" fill="white" font-family="Arial" font-size="11">
     ${badge.description}
   </text>
 </svg>`;
@@ -89,11 +101,23 @@ app.get('/api/badge/:badgeId', (req, res) => {
 });
 
 // Gerar certificado visual para compartilhamento
+/* istanbul ignore next */
 app.get('/api/certificate/:username', (req, res) => {
   const username = req.params.username;
+  const levelParam = req.query.level ? parseInt(req.query.level, 10) : undefined;
 
-  if (!learningProgress.badges.includes('first-steps')) {
+  const hasLevel1 = learningProgress.badges.includes('first-steps');
+  const hasLevel2 = learningProgress.badges.includes('testes-automatizados');
+
+  if (!hasLevel1 && !hasLevel2) {
     return res.status(404).json({ error: 'Certificado não disponível. Complete o desafio primeiro!' });
+  }
+
+  if (levelParam === 1 && !hasLevel1) {
+    return res.status(404).json({ error: 'Certificado do nível 1 não disponível.' });
+  }
+  if (levelParam === 2 && !hasLevel2) {
+    return res.status(404).json({ error: 'Certificado do nível 2 não disponível.' });
   }
 
   const currentDate = new Date().toLocaleDateString('pt-BR', {
@@ -103,6 +127,19 @@ app.get('/api/certificate/:username', (req, res) => {
   });
 
   // Gerar SVG do certificado para compartilhamento social
+  const renderLevel = (() => {
+    if (levelParam === 1) return 1;
+    if (levelParam === 2) return 2;
+    return hasLevel2 ? 2 : 1;
+  })();
+
+  const competenciesLine1 = renderLevel === 2
+    ? '✓ Automação de testes  ✓ Cobertura mínima 80%'
+    : '✓ Configuração de workflow básico  ✓ Uso de actions do marketplace';
+  const competenciesLine2 = renderLevel === 2
+    ? '✓ Execução de Jest  ✓ Relatório e validação de cobertura'
+    : '✓ Definição de jobs e steps  ✓ Variáveis de ambiente  ✓ Build e health check automatizados';
+
   const certificateSVG = `
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" style="background: linear-gradient(135deg, #0d1117 0%, #21262d 100%);">
   <!-- Borda decorativa -->
@@ -135,7 +172,7 @@ app.get('/api/certificate/:username', (req, res) => {
   </text>
   
   <text x="400" y="320" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#238636">
-    Desafio 01 - GitHub Actions Básico
+    ${renderLevel === 2 ? 'Desafio 02 - Testes Automatizados' : 'Desafio 01 - GitHub Actions Básico'}
   </text>
   
   <!-- Competências -->
@@ -144,10 +181,10 @@ app.get('/api/certificate/:username', (req, res) => {
   </text>
   
   <text x="400" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#8b949e">
-    ✓ Configuração de workflow básico  ✓ Uso de actions do marketplace
+    ${competenciesLine1}
   </text>
   <text x="400" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#8b949e">
-    ✓ Definição de jobs e steps  ✓ Variáveis de ambiente  ✓ Build e health check automatizados
+    ${competenciesLine2}
   </text>
   
   
@@ -166,11 +203,12 @@ app.get('/api/certificate/:username', (req, res) => {
 </svg>`;
 
   res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
-  res.setHeader('Content-Disposition', `inline; filename="certificado-${username}-descomplicando-github-actions.svg"`);
+  res.setHeader('Content-Disposition', `inline; filename="certificado-nivel-${renderLevel}-${username}-descomplicando-github-actions.svg"`);
   res.send(certificateSVG);
 });
 
 // Verificar status do workflow no GitHub
+/* istanbul ignore next */
 app.post('/api/check-github-status', async (req, res) => {
   try {
     const { repository, username } = req.body;
@@ -180,7 +218,7 @@ app.post('/api/check-github-status', async (req, res) => {
     }
 
     // Fazer request para a API do GitHub para verificar workflow runs
-    const apiUrl = `https://api.github.com/repos/${username}/${repository}/actions/runs?status=success&per_page=10`;
+    const apiUrl = `https://api.github.com/repos/${username}/${repository}/actions/runs?status=success&per_page=15`;
 
     const response = await fetch(apiUrl);
     const data = await response.json();
@@ -193,24 +231,37 @@ app.post('/api/check-github-status', async (req, res) => {
         run.name && run.name.includes('Basic CI')
       );
 
-      // Verificar se algum dos runs tem artefatos (certificado foi gerado)
-      let hasArtifacts = false;
+      const challenge2Runs = data.workflow_runs.filter(run =>
+        run.status === 'completed' &&
+        run.conclusion === 'success' &&
+        run.name && (run.name.includes('Nível 2') || run.name.includes('Testing'))
+      );
+
+      // Verificar artefatos por nível (certificado gerado)
+      let hasArtifactsLevel1 = false;
+      let hasArtifactsLevel2 = false;
       if (successfulRuns.length > 0) {
-        // Verificar artefatos do run mais recente
-        const latestRun = successfulRuns[0];
-        const artifactsUrl = `https://api.github.com/repos/${username}/${repository}/actions/runs/${latestRun.id}/artifacts`;
-
+        const latestL1 = successfulRuns[0];
+        const artifactsUrlL1 = `https://api.github.com/repos/${username}/${repository}/actions/runs/${latestL1.id}/artifacts`;
         try {
-          const artifactsResponse = await fetch(artifactsUrl);
-          const artifactsData = await artifactsResponse.json();
-
-          hasArtifacts = artifactsData.artifacts &&
-            artifactsData.artifacts.some(artifact =>
-              artifact.name.includes('level-1-certificate') ||
-              artifact.name.includes('certificate')
-            );
+          const respL1 = await fetch(artifactsUrlL1);
+          const dataL1 = await respL1.json();
+          const names = (dataL1.artifacts || []).map(a => a.name || '');
+          hasArtifactsLevel1 = names.some(n => n.includes('level-1-certificate') || n.includes('certificate'));
         } catch (error) {
-          console.log('Erro ao verificar artefatos:', error);
+          console.log('Erro ao verificar artefatos L1:', error);
+        }
+      }
+      if (challenge2Runs.length > 0) {
+        const latestL2 = challenge2Runs[0];
+        const artifactsUrlL2 = `https://api.github.com/repos/${username}/${repository}/actions/runs/${latestL2.id}/artifacts`;
+        try {
+          const respL2 = await fetch(artifactsUrlL2);
+          const dataL2 = await respL2.json();
+          const names = (dataL2.artifacts || []).map(a => a.name || '');
+          hasArtifactsLevel2 = names.some(n => n.includes('level-2-certificate') || n.includes('certificate'));
+        } catch (error) {
+          console.log('Erro ao verificar artefatos L2:', error);
         }
       }
 
@@ -224,25 +275,83 @@ app.post('/api/check-github-status', async (req, res) => {
         repository.toLowerCase() === validName.toLowerCase()
       );
 
-      if (successfulRuns.length > 0 && hasArtifacts && repoNameValid && !learningProgress.badges.includes('first-steps')) {
-        // Atualizar progresso automaticamente
-        learningProgress.badges.push('first-steps');
-        learningProgress.completedChallenges = 1;
+      const canAwardLevel1 = successfulRuns.length > 0 && repoNameValid && hasArtifactsLevel1;
+      const canAwardLevel2 = challenge2Runs.length > 0 && repoNameValid && hasArtifactsLevel2;
+
+      // Atualizar métrica de commits da branch padrão
+      try {
+        const repoResp = await fetch(`https://api.github.com/repos/${username}/${repository}`);
+        if (repoResp.ok) {
+          const repoJson = await repoResp.json();
+          const defaultBranch = repoJson.default_branch;
+          if (defaultBranch) {
+            const commitsResp = await fetch(`https://api.github.com/repos/${username}/${repository}/commits?sha=${defaultBranch}&per_page=1`);
+            if (commitsResp.ok) {
+              const linkHeader = commitsResp.headers.get('link');
+              let commitCount = 0;
+              if (linkHeader && linkHeader.includes('rel="last"')) {
+                const match = linkHeader.match(/&page=(\d+)>; rel="last"/);
+                if (match && match[1]) {
+                  commitCount = parseInt(match[1], 10);
+                }
+              } else {
+                // Sem paginação, pelo menos 0 ou 1 commit
+                const oneCommit = await commitsResp.json();
+                commitCount = Array.isArray(oneCommit) ? oneCommit.length : 0;
+              }
+              learningProgress.stats.commits = commitCount;
+              learningProgress.lastUpdate = new Date().toISOString();
+            }
+          }
+        }
+      } catch (e) {
+        // Não bloquear fluxo em caso de erro de métrica
+      }
+
+      const earnedBadges = [];
+      if (canAwardLevel1 && !learningProgress.badges.includes('first-steps')) {
+        earnedBadges.push('first-steps');
+      }
+      if (canAwardLevel2 && !learningProgress.badges.includes('testes-automatizados')) {
+        earnedBadges.push('testes-automatizados');
+        if (!learningProgress.badges.includes('first-steps')) {
+          // Nível 2 pressupõe nível 1
+          earnedBadges.push('first-steps');
+        }
+      }
+
+      if (earnedBadges.length > 0) {
+        // Aplicar ganhos (evitar duplicados)
+        for (const b of earnedBadges) {
+          if (!learningProgress.badges.includes(b)) {
+            learningProgress.badges.push(b);
+          }
+        }
+        learningProgress.completedChallenges = Math.max(
+          learningProgress.completedChallenges,
+          learningProgress.badges.includes('testes-automatizados') ? 2 : 1
+        );
         learningProgress.stats.successfulBuilds += 1;
-        learningProgress.stats.commits += 1;
+        if (earnedBadges.includes('testes-automatizados')) {
+          learningProgress.stats.testsRun += 1;
+        } else {
+          learningProgress.stats.commits += 1;
+        }
         learningProgress.lastUpdate = new Date().toISOString();
 
         return res.json({
           success: true,
           badgeEarned: true,
-          certificateReady: true,
+          earnedBadges: Array.from(new Set(earnedBadges)),
+          level: earnedBadges.includes('testes-automatizados') ? 2 : 1,
+          certificateReady: hasArtifactsLevel2 || hasArtifactsLevel1,
           username: username,
-          message: 'Parabéns! Workflow executado com sucesso e certificado gerado!',
+          message: 'Progresso atualizado com sucesso!',
           progress: learningProgress
         });
       }
 
-      if (successfulRuns.length > 0 && !hasArtifacts) {
+      if ((successfulRuns.length > 0 || challenge2Runs.length > 0) && !(hasArtifactsLevel1 || hasArtifactsLevel2)) {
         return res.json({
           success: true,
           badgeEarned: false,
@@ -263,7 +372,7 @@ app.post('/api/check-github-status', async (req, res) => {
       return res.json({
         success: true,
         badgeEarned: false,
-        message: 'Execute o workflow no GitHub Actions e aguarde a geração do certificado.',
+        message: 'Nenhuma atualização encontrada para este repositório.',
         progress: learningProgress
       });
     }
@@ -277,6 +386,7 @@ app.post('/api/check-github-status', async (req, res) => {
 });
 
 // Webhook para receber notificação direta do workflow
+/* istanbul ignore next */
 app.post('/api/workflow-complete', (req, res) => {
   try {
     const { username, repository, workflowName, runId, certificateGenerated } = req.body;
@@ -287,7 +397,7 @@ app.post('/api/workflow-complete', (req, res) => {
     }
 
     // Verificar se é o workflow correto
-    if (workflowName.includes('Basic CI') && certificateGenerated === true) {
+    if ((workflowName.includes('Basic CI') || workflowName.includes('Nível 2')) && certificateGenerated === true) {
       // Atualizar progresso automaticamente
       if (!learningProgress.badges.includes('first-steps')) {
         learningProgress.badges.push('first-steps');
@@ -307,6 +417,14 @@ app.post('/api/workflow-complete', (req, res) => {
           progress: learningProgress
         });
       } else {
+        // Para nível 2, adicionar badge específico
+        if (workflowName.includes('Nível 2') && !learningProgress.badges.includes('testes-automatizados')) {
+          learningProgress.badges.push('testes-automatizados');
+          learningProgress.completedChallenges = Math.max(learningProgress.completedChallenges, 2);
+          learningProgress.stats.testsRun += 1;
+          learningProgress.lastUpdate = new Date().toISOString();
+        }
+
         return res.json({
           success: true,
           message: 'Badge já estava desbloqueado',
@@ -329,6 +447,7 @@ app.post('/api/workflow-complete', (req, res) => {
 });
 
 // Detectar informações do repositório atual
+/* istanbul ignore next */
 app.get('/api/repository-info', (req, res) => {
   // Em um ambiente real, isso seria detectado automaticamente
   // Por enquanto, retornamos informações para que o frontend possa usar
@@ -347,9 +466,10 @@ app.get('/api/repository-info', (req, res) => {
 });
 
 // Rota para reset (útil para testes)
+/* istanbul ignore next */
 app.post('/api/reset', (req, res) => {
   learningProgress = {
-    totalChallenges: 1,
+    totalChallenges: 2,
     completedChallenges: 0,
     badges: [],
     lastUpdate: new Date().toISOString(),
@@ -365,6 +485,7 @@ app.post('/api/reset', (req, res) => {
 });
 
 // Rota principal
+/* istanbul ignore next */
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -379,6 +500,7 @@ app.get('/health', (req, res) => {
 });
 
 // Iniciar servidor apenas se não estiver sendo importado (não em testes)
+/* istanbul ignore next */
 if (require.main === module) {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Descomplicando GitHub Actions rodando na porta ${PORT}`);

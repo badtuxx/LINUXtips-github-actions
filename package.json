@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "echo 'Build completed successfully!'"
+    "build": "echo 'Build completed successfully!'",
+    "tests": "jest --coverage",
+    "posttests": "mkdir -p .nyc_output && cp coverage/coverage-final.json .nyc_output/out.json"
   },
   "keywords": [
     "github-actions",
@@ -20,9 +22,14 @@
     "express": "^4.18.2",
     "cors": "^2.8.5",
     "helmet": "^7.0.0",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4",
+    "nyc": "^17.1.0"
+  },
   "engines": {
     "node": ">=16.0.0"
   }
