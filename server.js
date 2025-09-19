@@ -21,7 +21,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Simulação de dados de progresso (em produção seria um banco de dados)
 let learningProgress = {
-  totalChallenges: 2,
+  totalChallenges: 3,
   completedChallenges: 0,
   badges: [],
   lastUpdate: new Date().toISOString(),
@@ -48,6 +48,13 @@ const availableBadges = {
     icon: 'check-circle',
     color: '#8957e5',
     badgeText: 'DESAFIO 02 CONCLUÍDO'
+  },
+  'containers-seguros': {
+    name: 'Containers e Segurança',
+    description: 'Completou o Desafio 03 - Containers e Segurança',
+    icon: 'check-circle',
+    color: '#1f6feb',
+    badgeText: 'DESAFIO 03 CONCLUÍDO'
   }
 };
 
@@ -108,8 +115,9 @@ app.get('/api/certificate/:username', (req, res) => {
 
   const hasLevel1 = learningProgress.badges.includes('first-steps');
   const hasLevel2 = learningProgress.badges.includes('testes-automatizados');
+  const hasLevel3 = learningProgress.badges.includes('containers-seguros');
 
-  if (!hasLevel1 && !hasLevel2) {
+  if (!hasLevel1 && !hasLevel2 && !hasLevel3) {
     return res.status(404).json({ error: 'Certificado não disponível. Complete o desafio primeiro!' });
   }
 
@@ -118,6 +126,9 @@ app.get('/api/certificate/:username', (req, res) => {
   }
   if (levelParam === 2 && !hasLevel2) {
     return res.status(404).json({ error: 'Certificado do nível 2 não disponível.' });
+  }
+  if (levelParam === 3 && !hasLevel3) {
+    return res.status(404).json({ error: 'Certificado do nível 3 não disponível.' });
   }
 
   const currentDate = new Date().toLocaleDateString('pt-BR', {
@@ -130,15 +141,30 @@ app.get('/api/certificate/:username', (req, res) => {
   const renderLevel = (() => {
     if (levelParam === 1) return 1;
     if (levelParam === 2) return 2;
-    return hasLevel2 ? 2 : 1;
+    if (levelParam === 3) return 3;
+    if (hasLevel3) return 3;
+    if (hasLevel2) return 2;
+    return 1;
   })();
 
-  const competenciesLine1 = renderLevel === 2
-    ? '✓ Automação de testes  ✓ Cobertura mínima 80%'
-    : '✓ Configuração de workflow básico  ✓ Uso de actions do marketplace';
-  const competenciesLine2 = renderLevel === 2
-    ? '✓ Execução de Jest  ✓ Relatório e validação de cobertura'
-    : '✓ Definição de jobs e steps  ✓ Variáveis de ambiente  ✓ Build e health check automatizados';
+  const competencies = (() => {
+    if (renderLevel === 3) {
+      return {
+        line1: '✓ Build de imagem Docker  ✓ Segurança de containers',
+        line2: '✓ Trivy scan sem vulnerabilidades críticas  ✓ Push no GHCR'
+      };
+    }
+    if (renderLevel === 2) {
+      return {
+        line1: '✓ Automação de testes  ✓ Cobertura mínima 80%',
+        line2: '✓ Execução de Jest  ✓ Relatório e validação de cobertura'
+      };
+    }
+    return {
+      line1: '✓ Configuração de workflow básico  ✓ Uso de actions do marketplace',
+      line2: '✓ Definição de jobs e steps  ✓ Variáveis de ambiente  ✓ Build e health check automatizados'
+    };
+  })();
 
   const certificateSVG = `
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" style="background: linear-gradient(135deg, #0d1117 0%, #21262d 100%);">
@@ -172,7 +198,7 @@ app.get('/api/certificate/:username', (req, res) => {
   </text>
   
   <text x="400" y="320" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#238636">
-    ${renderLevel === 2 ? 'Desafio 02 - Testes Automatizados' : 'Desafio 01 - GitHub Actions Básico'}
+    ${renderLevel === 3 ? 'Desafio 03 - Containers e Segurança' : renderLevel === 2 ? 'Desafio 02 - Testes Automatizados' : 'Desafio 01 - GitHub Actions Básico'}
   </text>
   
   <!-- Competências -->
@@ -181,10 +207,10 @@ app.get('/api/certificate/:username', (req, res) => {
   </text>
   
   <text x="400" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#8b949e">
-    ${competenciesLine1}
+    ${competencies.line1}
   </text>
   <text x="400" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#8b949e">
-    ${competenciesLine2}
+    ${competencies.line2}
   </text>
   
   
@@ -237,9 +263,16 @@ app.post('/api/check-github-status', async (req, res) => {
         run.name && (run.name.includes('Nível 2') || run.name.includes('Testing'))
       );
 
+      const challenge3Runs = data.workflow_runs.filter(run =>
+        run.status === 'completed' &&
+        run.conclusion === 'success' &&
+        run.name && (run.name.includes('Nível 3') || run.name.includes('Containers') || run.name.includes('Security'))
+      );
+
       // Verificar artefatos por nível (certificado gerado)
       let hasArtifactsLevel1 = false;
       let hasArtifactsLevel2 = false;
+      let hasArtifactsLevel3 = false;
       if (successfulRuns.length > 0) {
         const latestL1 = successfulRuns[0];
         const artifactsUrlL1 = `https://api.github.com/repos/${username}/${repository}/actions/runs/${latestL1.id}/artifacts`;
@@ -264,6 +297,18 @@ app.post('/api/check-github-status', async (req, res) => {
           console.log('Erro ao verificar artefatos L2:', error);
         }
       }
+      if (challenge3Runs.length > 0) {
+        const latestL3 = challenge3Runs[0];
+        const artifactsUrlL3 = `https://api.github.com/repos/${username}/${repository}/actions/runs/${latestL3.id}/artifacts`;
+        try {
+          const respL3 = await fetch(artifactsUrlL3);
+          const dataL3 = await respL3.json();
+          const names = (dataL3.artifacts || []).map(a => a.name || '');
+          hasArtifactsLevel3 = names.some(n => n.includes('level-3-certificate'));
+        } catch (error) {
+          console.log('Erro ao verificar artefatos L3:', error);
+        }
+      }
 
       // Verificar se o repositório tem o nome exato (case insensitive)
       const validRepoNames = [
@@ -277,6 +322,7 @@ app.post('/api/check-github-status', async (req, res) => {
 
       const canAwardLevel1 = successfulRuns.length > 0 && repoNameValid && hasArtifactsLevel1;
       const canAwardLevel2 = challenge2Runs.length > 0 && repoNameValid && hasArtifactsLevel2;
+      const canAwardLevel3 = challenge3Runs.length > 0 && repoNameValid && hasArtifactsLevel3;
 
       // Atualizar métrica de commits da branch padrão
       try {
@@ -320,6 +366,16 @@ app.post('/api/check-github-status', async (req, res) => {
         }
       }
 
+      if (canAwardLevel3 && !learningProgress.badges.includes('containers-seguros')) {
+        earnedBadges.push('containers-seguros');
+        if (!learningProgress.badges.includes('testes-automatizados')) {
+          earnedBadges.push('testes-automatizados');
+        }
+        if (!learningProgress.badges.includes('first-steps')) {
+          earnedBadges.push('first-steps');
+        }
+      }
+
       if (earnedBadges.length > 0) {
         // Aplicar ganhos (evitar duplicados)
         for (const b of earnedBadges) {
@@ -329,10 +385,12 @@ app.post('/api/check-github-status', async (req, res) => {
         }
         learningProgress.completedChallenges = Math.max(
           learningProgress.completedChallenges,
-          learningProgress.badges.includes('testes-automatizados') ? 2 : 1
+          learningProgress.badges.includes('containers-seguros') ? 3 : learningProgress.badges.includes('testes-automatizados') ? 2 : 1
         );
         learningProgress.stats.successfulBuilds += 1;
-        if (earnedBadges.includes('testes-automatizados')) {
+        if (earnedBadges.includes('containers-seguros')) {
+          learningProgress.stats.deployments += 1;
+        } else if (earnedBadges.includes('testes-automatizados')) {
           learningProgress.stats.testsRun += 1;
         } else {
           learningProgress.stats.commits += 1;
@@ -343,15 +401,15 @@ app.post('/api/check-github-status', async (req, res) => {
           success: true,
           badgeEarned: true,
           earnedBadges: Array.from(new Set(earnedBadges)),
-          level: earnedBadges.includes('testes-automatizados') ? 2 : 1,
-          certificateReady: hasArtifactsLevel2 || hasArtifactsLevel1,
+          level: earnedBadges.includes('containers-seguros') ? 3 : earnedBadges.includes('testes-automatizados') ? 2 : 1,
+          certificateReady: hasArtifactsLevel3 || hasArtifactsLevel2 || hasArtifactsLevel1,
           username: username,
           message: 'Progresso atualizado com sucesso!',
           progress: learningProgress
         });
       }
 
-      if ((successfulRuns.length > 0 || challenge2Runs.length > 0) && !(hasArtifactsLevel1 || hasArtifactsLevel2)) {
+      if ((successfulRuns.length > 0 || challenge2Runs.length > 0 || challenge3Runs.length > 0) && !(hasArtifactsLevel1 || hasArtifactsLevel2 || hasArtifactsLevel3)) {
         return res.json({
           success: true,
           badgeEarned: false,
@@ -397,7 +455,7 @@ app.post('/api/workflow-complete', (req, res) => {
     }
 
     // Verificar se é o workflow correto
-    if ((workflowName.includes('Basic CI') || workflowName.includes('Nível 2')) && certificateGenerated === true) {
+    if ((workflowName.includes('Basic CI') || workflowName.includes('Nível 2') || workflowName.includes('Nível 3')) && certificateGenerated === true) {
       // Atualizar progresso automaticamente
       if (!learningProgress.badges.includes('first-steps')) {
         learningProgress.badges.push('first-steps');
@@ -422,6 +480,13 @@ app.post('/api/workflow-complete', (req, res) => {
           learningProgress.badges.push('testes-automatizados');
           learningProgress.completedChallenges = Math.max(learningProgress.completedChallenges, 2);
           learningProgress.stats.testsRun += 1;
+          learningProgress.lastUpdate = new Date().toISOString();
+        }
+        // Para nível 3, adicionar badge específico
+        if (workflowName.includes('Nível 3') && !learningProgress.badges.includes('containers-seguros')) {
+          learningProgress.badges.push('containers-seguros');
+          learningProgress.completedChallenges = Math.max(learningProgress.completedChallenges, 3);
+          learningProgress.stats.deployments += 1;
           learningProgress.lastUpdate = new Date().toISOString();
         }
 
@@ -469,7 +534,7 @@ app.get('/api/repository-info', (req, res) => {
 /* istanbul ignore next */
 app.post('/api/reset', (req, res) => {
   learningProgress = {
-    totalChallenges: 2,
+    totalChallenges: 3,
     completedChallenges: 0,
     badges: [],
     lastUpdate: new Date().toISOString(),
