@@ -16,6 +16,13 @@ const challenges = [
         description: 'Implemente testes com Jest e atinja cobertura mínima de 80% no pipeline. Gere e faça upload do certificado do nível 2.',
         badge: 'testes-automatizados',
         reward: 'Badge: Desafio 02 Concluído'
+    },
+    {
+        id: 'containers-seguros',
+        title: 'Desafio 03 - Containers e Segurança',
+        description: 'Construa a imagem Docker, escaneie com Trivy e publique no ECR apenas se não houver vulnerabilidades CRÍTICAS. Gere e faça upload do certificado do nível 3.',
+        badge: 'containers-seguros',
+        reward: 'Badge: Desafio 03 Concluído'
     }
 ];
 
@@ -229,7 +236,7 @@ function updateBadgesDisplay() {
 // Atualizar seção do certificado
 function updateCertificateSection() {
     const certificateSection = document.getElementById('certificateSection');
-    const hasAnyCertificate = appState.badges.includes('first-steps') || appState.badges.includes('testes-automatizados');
+    const hasAnyCertificate = appState.badges.includes('first-steps') || appState.badges.includes('testes-automatizados') || appState.badges.includes('containers-seguros');
 
     if (certificateSection) {
         certificateSection.style.display = hasAnyCertificate ? 'block' : 'none';
@@ -553,7 +560,7 @@ Badges disponíveis: first-steps, testes-automatizados
 window.onBadgeClick = function(badgeId) {
     const username = document.getElementById('certificateUsername').value.trim();
     if (!username) return;
-    const level = badgeId === 'testes-automatizados' ? 2 : 1;
+    const level = badgeId === 'containers-seguros' ? 3 : (badgeId === 'testes-automatizados' ? 2 : 1);
     selectedCertificateLevel = level;
     generateCertificate();
 }
