@@ -150,8 +150,8 @@ app.get('/api/certificate/:username', (req, res) => {
   const competencies = (() => {
     if (renderLevel === 3) {
       return {
-        line1: '✓ Build de imagem Docker  ✓ Segurança de containers',
-        line2: '✓ Trivy scan sem vulnerabilidades críticas  ✓ Push no GHCR'
+        line1: '✓ Build de imagem Docker ✓ Lint de Dockerfile ✓ Segurança de containers',
+        line2: '✓ Trivy Scan ✓ Smoke Tests ✓ Push no GHCR'
       };
     }
     if (renderLevel === 2) {
