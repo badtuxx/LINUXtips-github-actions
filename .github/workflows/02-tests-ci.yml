@@ -20,7 +20,7 @@ jobs:
       - name: "Checkout do código"
         uses: actions/checkout@v4
 
-      - name: Run tests with coverage gate (mínimo 80%)
+      - name: Executar testes com cobertura (mínimo 80%)
         run: |
           node - <<'NODE'
           const { execSync } = require('child_process');
