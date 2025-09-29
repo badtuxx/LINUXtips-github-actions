@@ -113,6 +113,7 @@ jobs:
             console.log('\nCobertura >= 80% em todas as métricas.');
           }
           NODE
+          
       - name: "Extrair porcentagem de cobertura" # Esse step será validado pelo desafio, não altere o nome. No final, ele deve gerar o output "coverage" com a porcentagem de cobertura.
         id: coverage
         run: |
