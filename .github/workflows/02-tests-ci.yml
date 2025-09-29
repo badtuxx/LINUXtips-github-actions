@@ -20,11 +20,99 @@ jobs:
       - name: "Checkout do código"
         uses: actions/checkout@v4
 
-      # INSIRA AQUI A LÓGICA PARA RODAR OS TESTES E VERIFICAR A COBERTURA
-      ###
-      ###
-      ###
+      - name: Run tests with coverage gate (mínimo 80%)
+        run: |
+          node - <<'NODE'
+          const { execSync } = require('child_process');
+          const fs = require('fs');
+          const path = require('path');
 
+          function run(cmd) {
+            console.log(`\n$ ${cmd}`);
+            execSync(cmd, { stdio: 'inherit' });
+          }
+
+          try {
+            run('npm ci');
+          } catch (e) {
+            console.warn('npm ci falhou; tentando npm install...');
+            run('npm install');
+          }
+
+          run('npm run tests');
+          const candidates = [
+            path.join('coverage', 'coverage-summary.json'),
+            path.join('coverage', 'coverage-final.json')
+          ];
+          let coverageJson = null;
+          for (const p of candidates) {
+            if (fs.existsSync(p)) {
+              coverageJson = JSON.parse(fs.readFileSync(p, 'utf8'));
+              console.log(`\nCobertura carregada de: ${p}`);
+              break;
+            }
+          }
+          if (!coverageJson) {
+            console.error('Não foi possível encontrar coverage-summary.json nem coverage-final.json.');
+            process.exit(2);
+          }
+
+          const totals = coverageJson.total || coverageJson;
+          function pctOf(metric) {
+            const m = totals[metric];
+            return (m && typeof m.pct === 'number') ? m.pct : null;
+          }
+
+          const current = {
+            statements: pctOf('statements'),
+            branches:   pctOf('branches'),
+            functions:  pctOf('functions'),
+            lines:      pctOf('lines'),
+          };
+
+          const thresholds = {
+            statements: 80,
+            branches:   80,
+            functions:  80,
+            lines:      80,
+          };
+
+          const rows = [
+            ['Métrica',     'Atual (%)', 'Limite (%)', 'Status'],
+            ['Statements',  current.statements, thresholds.statements, ''],
+            ['Branches',    current.branches,   thresholds.branches,   ''],
+            ['Functions',   current.functions,  thresholds.functions,  ''],
+            ['Lines',       current.lines,      thresholds.lines,      ''],
+          ];
+
+          let fail = false;
+          for (let i = 1; i < rows.length; i++) {
+            const cur = rows[i][1];
+            const thr = rows[i][2];
+            const ok = cur !== null && cur >= thr;
+            rows[i][3] = ok ? 'OK' : 'FAIL';
+            if (!ok) fail = true;
+          }
+
+          const widths = [12, 12, 12, 8];
+          function pad(s, w) { s = String(s); return s + ' '.repeat(Math.max(0, w - s.length)); }
+          console.log('\nCobertura (Jest):\n');
+          for (const r of rows) {
+            console.log(
+              pad(r[0], widths[0]),
+              pad(r[1], widths[1]),
+              pad(r[2], widths[2]),
+              pad(r[3], widths[3]),
+            );
+          }
+
+          if (fail) {
+            console.error('\nCobertura abaixo de 80% em uma ou mais métricas.');
+            process.exit(1);
+          } else {
+            console.log('\nCobertura >= 80% em todas as métricas.');
+          }
+          NODE
       - name: "Extrair porcentagem de cobertura" # Esse step será validado pelo desafio, não altere o nome. No final, ele deve gerar o output "coverage" com a porcentagem de cobertura.
         id: coverage
         run: |
