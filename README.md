@@ -2,7 +2,7 @@
 
 Se inscreva na aula ao vivo e gratuita: https://quiz.linuxtips.io/github-actions
 
-Bem-vindo ao **Descomplicando GitHub Actions**! Este projeto foi criado pela comunidade **LINUXtips** para você aprender os conceitos básicos de CI/CD na prática de forma simples e direta.
+Bem-vindo Luis Feliphe ao **Descomplicando GitHub Actions**! Este projeto foi criado pela comunidade **LINUXtips** para você aprender os conceitos básicos de CI/CD na prática de forma simples e direta.
 
 Este projeto foi desenhado para ser o material de apoio do vídeo "Descomplicando GitHub Actions" no [canal da LINUXtips no YouTube](https://youtube.com/linuxtips). A ideia é que você possa codificar junto e aprender na prática.
 
