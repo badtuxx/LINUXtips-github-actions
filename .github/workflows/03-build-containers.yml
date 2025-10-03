@@ -21,6 +21,80 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Definir variáveis da imagem
+        id: vars
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REPO=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          REGISTRY=ghcr.io
+          TAG=${GITHUB_SHA}
+          echo "IMAGE_NAME=${{ vars.IMAGE_NAME }}" >> $GITHUB_ENV
+          echo "REGISTRY=$REGISTRY" >> $GITHUB_ENV
+          echo "OWNER=$OWNER" >> $GITHUB_ENV
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Docker Login
+        uses: docker/login-action@v3.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: brasleiro01
+          password: ${{ secrets.TOKEN_PAT }}
+
+      - name: Rodar Hadolint
+        id: hadolint
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: Dockerfile
+          output-file: lint-report.txt
+          format: tty
+          no-color: true
+          no-fail: true
+
+      - name: Output (DL3006 e DL3008)
+        run: |
+          cat lint-report.txt
+          if grep -q "DL3006\|DL3008" lint-report.txt; then
+            echo "Erros críticos encontrados no Dockerfile (DL3006 ou DL3008)!"
+            exit 1
+          else
+            echo "Dockerfile passou no lint!"
+          fi
+
+      - name: Build
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+
+      - name: Scan de vulnerabilidades com Trivy
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: image
+          image-ref: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          severity: CRITICAL
+          exit-code: 1
+          format: table
+          output: trivy-report.txt
+
+      - name: Upload relatório Trivy
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.txt
+
+      - name: Push da imagem no GHCR
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          
       # AQUI VAI O CÓDIGO DO DESAFIO :)
 
   generate-certificate: # DAQUI PARA BAIXO, NÃO ALTERAR
