@@ -1,0 +1,230 @@
+name: "Nível 1: Basic CI"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  CHALLENGE_LEVEL: 1
+  CHALLENGE_NAME: "first-steps"
+
+jobs:
+  basic-setup:
+    name: "Setup & Basic Checks"
+    runs-on: ubuntu-latest
+    
+    outputs:
+      node-version: ${{ steps.setup.outputs.node-version }}
+      challenge-status: ${{ steps.challenge.outputs.status }}
+    
+    steps:
+      - name: "Checkout do código"
+        uses: actions/checkout@v4
+        
+      - name: "Setup Node.js"
+        id: setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: "Informações do ambiente"
+        run: |
+          echo "Runner: ${{ runner.os }}"
+          echo "Node.js: $(node --version)"
+          echo "NPM: $(npm --version)"
+          echo "Challenge: ${{ env.CHALLENGE_NAME }}"
+          echo "Data: $(date)"
+          
+      - name: "Instalar dependências"
+        run: |
+          echo "Instalando dependências..."
+          npm ci
+          echo "Dependências instaladas com sucesso!"
+          
+      - name: "Verificar estrutura do projeto"
+        run: |
+          echo "Verificando estrutura do projeto..."
+          ls -la
+          echo ""
+          echo "Arquivos principais encontrados:"
+          [ -f "package.json" ] && echo "package.json"
+          [ -f "server.js" ] && echo "server.js"
+          [ -f "server.test.js" ] && echo "server.test.js"
+          [ -d "public" ] && echo "diretório public/"
+          [ -d ".github/workflows" ] && echo "workflows configurados"
+          
+      - name: "Challenge Status"
+        id: challenge
+        run: |
+          echo "Parabéns! Você executou seu primeiro GitHub Action!"
+          echo "Status: INICIADO"
+          echo "Próximo passo: Execute os testes automatizados"
+          echo "status=started" >> $GITHUB_OUTPUT
+          
+  build:
+    name: "Build da Aplicação"
+    runs-on: ubuntu-latest
+    needs: basic-setup
+    
+    steps:
+      - name: "Checkout do código"
+        uses: actions/checkout@v4
+        
+      - name: "Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.basic-setup.outputs.node-version }}
+          cache: 'npm'
+          
+      - name: "Instalar dependências"
+        run: npm ci
+        
+      - name: "Build da aplicação"
+        run: |
+          echo "Iniciando build..."
+          npm run build
+          echo "Build concluído com sucesso!"
+          
+      - name: "Estatísticas do build"
+        run: |
+          echo "Estatísticas do build:"
+          echo "Tamanho do projeto: $(du -sh . | cut -f1)"
+          echo "Arquivos: $(find . -type f | wc -l)"
+          
+  health-check:
+    name: "Health Check"
+    runs-on: ubuntu-latest
+    needs: [basic-setup, build]
+    
+    steps:
+      - name: "Checkout do código"
+        uses: actions/checkout@v4
+        
+      - name: "Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: "Instalar dependências"
+        run: npm ci
+        
+      - name: "Iniciar servidor em background"
+        run: |
+          echo "Iniciando servidor..."
+          npm start &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          sleep 10
+          
+      - name: "Verificar health endpoint"
+        run: |
+          echo "Verificando health check..."
+          curl -f http://localhost:3000/health || exit 1
+          echo "Health check passou!"
+          
+      - name: "Parar servidor"
+        if: always()
+        run: |
+          if [ ! -z "$SERVER_PID" ]; then
+            kill $SERVER_PID || true
+          fi
+          
+  challenge-complete:
+    name: "Desafio Nível 1 - Concluído!"
+    runs-on: ubuntu-latest
+    needs: [basic-setup, build, health-check]
+    if: success()
+    
+    steps:
+      - name: "Parabéns!"
+        run: |
+          echo "PARABÉNS! Você concluiu o Nível 1!"
+          echo ""
+          echo "O que você aprendeu:"
+          echo "   • Como criar um workflow básico"
+          echo "   • Usar actions do marketplace (checkout, setup-node)"
+          echo "   • Definir jobs e steps"
+          echo "   • Usar variáveis de ambiente"
+          echo "   • Fazer build e health check"
+          echo ""
+          echo "Badge desbloqueado: First Steps 🚀"
+          echo "Próximo desafio: Nível 2 - Testing Master"
+          echo ""
+          echo "Veja seu progresso em: https://github.com/${{ github.repository }}/actions"
+          
+      - name: "Atualizar estatísticas"
+        run: |
+          echo "Atualizando estatísticas do desafio..."
+          echo "Challenge: ${{ env.CHALLENGE_NAME }}"
+          echo "Status: CONCLUÍDO"
+          echo "Data: $(date)"
+          echo "Usuário: ${{ github.actor }}"
+          
+      - name: "Gerar certificado"
+        run: |
+          mkdir -p certificates
+          cat > certificates/level-1-certificate.md << EOF
+          # Certificado de Conclusão - Nível 1
+          
+          **Descomplicando Github Actions - GitHub Actions Edition**
+          
+          ---
+          
+          Este certificado atesta que **${{ github.actor }}** concluiu com sucesso:
+          
+          ## Nível 1: Primeiro Contato
+          
+          **Competências desenvolvidas:**
+          - Configuração de workflow básico
+          - Uso de actions do marketplace
+          - Definição de jobs e steps
+          - Variáveis de ambiente
+          - Build e health check automatizados
+          
+          **Data de conclusão:** $(date)
+          **Repositório:** ${{ github.repository }}
+          **Workflow:** ${{ github.run_id }}
+          
+          ---
+          
+          **Badge conquistado:** First Steps
+          
+          **Próximo desafio:** Nível 2 - Testing Master
+          
+          ---
+          
+          *Certificado gerado automaticamente pelo GitHub Actions*
+          *LINUXtips*
+          EOF
+          
+      - name: "Upload do certificado"
+        uses: actions/upload-artifact@v4
+        with:
+          name: level-1-certificate
+          path: certificates/
+          retention-days: 30
+          
+      - name: "Notificar aplicação sobre conclusão"
+        run: |
+          echo "Notificando aplicação sobre a conclusão do workflow..."
+          
+          # Tentar notificar a aplicação local (se estiver rodando)
+          curl -X POST "http://localhost:3000/api/workflow-complete" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "username": "${{ github.actor }}",
+              "repository": "${{ github.event.repository.name }}",
+              "workflowName": "${{ github.workflow }}",
+              "runId": "${{ github.run_id }}",
+              "certificateGenerated": true
+            }' || echo "Aplicação local não encontrada (normal em ambiente de produção)"
+          
+          echo "Workflow concluído com sucesso!"
+          echo "Badge será desbloqueado automaticamente se a aplicação estiver rodando"
+

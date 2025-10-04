@@ -1,0 +1,128 @@
+name: "Nível 3: Containers e Segurança"
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [ desafio-nivel-3 ]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  CHALLENGE_LEVEL: 3
+  CHALLENGE_NAME: "containers-e-seguranca"
+  REGISTRY: ghcr.io
+
+jobs:
+  build-scan-and-push:
+    name: "Build, Lint, Trivy Scan e Push no GHCR"
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Lint Dockerfile with Hadolint
+        uses: hadolint/hadolint-action@v2
+        with:
+          dockerfile: Dockerfile
+          format: tty
+          output-file: lint-report.txt
+          no-fail: true
+
+      - name: Check for DL3006 or DL3008 violations
+        run: |
+          if grep -qE "DL3006|DL3008" lint-report.txt; then
+            echo "Linting failed due to DL3006 or DL3008." && exit 1;
+          fi
+
+      - name: Upload lint report
+        uses: actions/upload-artifact@v3
+        with:
+          name: lint-report
+          path: lint-report.txt
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        id: build-image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: ghcr.io/${{ github.repository_owner }}/${{ vars.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Scan Docker image for vulnerabilities with Trivy
+        id: scan-image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/${{ vars.IMAGE_NAME }}:${{ github.sha }}
+          format: table
+          output: trivy-report.txt
+
+      - name: Check for critical vulnerabilities
+        run: |
+          if grep -q "CRITICAL" trivy-report.txt; then
+            echo "Critical vulnerabilities found." && exit 1;
+          fi
+        shell: bash
+
+      - name: Upload Trivy report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.txt
+
+  generate-certificate: # DAQUI PARA BAIXO, NÃO ALTERAR
+    name: "Desafio Nível 3 - Certificado"
+    needs: build-scan-and-push
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Gerar certificado"
+        run: |
+          mkdir -p certificates
+          cat > certificates/level-3-certificate.md << EOF
+          # Certificado de Conclusão - Nível 3
+
+          **Descomplicando Github Actions - GitHub Actions Edition**
+          ---
+
+          Este certificado atesta que **${{ github.actor }}** concluiu com sucesso:
+          ## Nível 3: Containers e Segurança
+
+          **Competências desenvolvidas:**
+          - Build de imagem Docker
+          - Lint de Dockerfile com Hadolint
+          - Scan de vulnerabilidades com Trivy (CRITICAL = 0)
+          - Relatório de vulnerabilidades como artefato
+          - Smoke test de execução do container
+          - Publicação no GitHub Container Registry (GHCR) condicionada ao scan
+          - Boas práticas de supply chain
+
+          **Data de conclusão:** $(date)
+          **Repositório:** ${{ github.repository }}
+          **Workflow:** ${{ github.run_id }}
+
+          ---
+          **Badge conquistado:** Containers e Segurança
+
+          ---
+          *Certificado gerado automaticamente pelo GitHub Actions*
+          *LINUXtips*
+          EOF
+
+      - name: "Upload do certificado"
+        uses: actions/upload-artifact@v4
+        with:
+          name: level-3-certificate
+          path: certificates/
+          retention-days: 30

@@ -1,3 +1,5 @@
+** Repo do Dvargas **
+
 # Descomplicando GitHub Actions
 
 Se inscreva na aula ao vivo e gratuita: https://quiz.linuxtips.io/github-actions
@@ -22,6 +24,7 @@ Neste projeto você aprenderá:
     Clique no botão **"Fork"** no canto superior direito desta página para criar uma cópia deste projeto na sua própria conta do GitHub.
 
 2.  **Clone o seu Fork:**
+
     ```bash
     git clone https://github.com/SEU-USUARIO-GITHUB/LINUXtips-github-actions.git
     cd LINUXtips-github-actions
@@ -32,14 +35,17 @@ Neste projeto você aprenderá:
 
 4.  **Instale as Dependências:**
     Você precisa do Node.js (versão 16 ou superior):
+
     ```bash
     npm install
     ```
 
 5.  **Teste a Aplicação Localmente:**
+
     ```bash
     npm start
     ```
+
     Acesse [http://localhost:3000](http://localhost:3000) no seu navegador.
 
 6.  **Execute seu Primeiro Workflow:**
@@ -86,5 +92,6 @@ Ao completar cada workflow com sucesso, você ganha os badges:
 ---
 
 **Feito pela comunidade LINUXtips.**
+#VAIIIIII
 
-
+teste nivel3
