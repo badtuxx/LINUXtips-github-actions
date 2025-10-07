@@ -20,11 +20,6 @@ jobs:
       - name: "Checkout do código"
         uses: actions/checkout@v4
 
-      # INSIRA AQUI A LÓGICA PARA RODAR OS TESTES E VERIFICAR A COBERTURA
-      ###
-      ###
-      ###
-
       - name: "Extrair porcentagem de cobertura" # Esse step será validado pelo desafio, não altere o nome. No final, ele deve gerar o output "coverage" com a porcentagem de cobertura.
         id: coverage
         run: |
@@ -45,7 +40,7 @@ jobs:
             cat > certificates/level-2-certificate.md << EOF
             # Certificado de Conclusão - Nível 2
 
-            **Descomplicando Github Actions - GitHub Actions Edition**
+            *Descomplicando Github Actions - GitHub Actions Edition*
             ---
 
             Este certificado atesta que **${{ github.actor }}** concluiu com sucesso:

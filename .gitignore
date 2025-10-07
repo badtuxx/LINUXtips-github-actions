@@ -114,3 +114,8 @@ Thumbs.db
 # Local development
 .local
 
+
+# Chave ssh
+
+.eval "$(ssh-agent -s)"
+.eval "$(ssh-agent -s)".pub

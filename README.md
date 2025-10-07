@@ -83,7 +83,7 @@ Ao completar cada workflow com sucesso, você ganha os badges:
 - Ao **Jeferson e ao Fábio**, além de toda a comunidade **LINUXtips** por inspirar e fomentar a educação em tecnologia no Brasil.
 - A todos os contribuidores que ajudarem a tornar este projeto ainda melhor.
 
----
+---- 
 
 **Feito pela comunidade LINUXtips.**
 
