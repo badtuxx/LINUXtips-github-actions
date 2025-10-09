@@ -21,20 +21,22 @@ jobs:
         uses: actions/checkout@v4
 
       - name: "Setup Node"
-      - uses: actions/setup-node@v5
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: "Instalar Deps"
         run: npm ci
-      
+
       - name: "Executar tests"
         run: npm run tests
 
+    
+
       
 
 
-        # INSIRA AQUI A LÓGICA PARA RODAR OS TESTES E VERIFICAR A COBERTURA
+      # INSIRA AQUI A LÓGICA PARA RODAR OS TESTES E VERIFICAR A COBERTURA
       ###
       ###
       ###
