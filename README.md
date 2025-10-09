@@ -44,7 +44,9 @@ Neste projeto você aprenderá:
 
 6.  **Execute seu Primeiro Workflow:**
     - Faça uma alteração simples (ex: adicione seu nome no README.md)
-    - Faça commit e push
+    - Faça git add README.md
+    - Faça git commit -m "first"
+    - Faça git push -u origin main
     - Vá para a aba "Actions" e veja seu primeiro workflow rodando!
 
 ## O que acontece nos Workflows?
