@@ -20,10 +20,24 @@ jobs:
       - name: "Checkout do código"
         uses: actions/checkout@v4
 
-      # INSIRA AQUI A LÓGICA PARA RODAR OS TESTES E VERIFICAR A COBERTURA
-      ###
-      ###
-      ###
+      - name: "Instalar dependências"
+        run: |
+          npm ci
+
+      - name: "Executar testes com cobertura"
+        run: |
+          npx nyc --reporter=text-summary npm test
+
+      - name: "Verificar cobertura mínima"
+        run: |
+          COVERAGE=$(npx nyc report --reporter=text-summary | grep -oP 'Statements\\s*:\\s*\\K[0-9\\.]+(?=%)' | head -1)
+          echo "Cobertura obtida: $COVERAGE%"
+          if (( $(echo "$COVERAGE < $COVERAGE_MIN" | bc -l) )); then
+            echo "❌ Cobertura abaixo do mínimo exigido ($COVERAGE_MIN%)"
+            exit 1
+          else
+            echo "✅ Cobertura mínima atingida!"
+          fi
 
       - name: "Extrair porcentagem de cobertura" # Esse step será validado pelo desafio, não altere o nome. No final, ele deve gerar o output "coverage" com a porcentagem de cobertura.
         id: coverage
