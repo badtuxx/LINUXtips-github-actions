@@ -1,0 +1,61 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" style="background: linear-gradient(135deg, #0d1117 0%, #21262d 100%);">
+  <!-- Borda decorativa -->
+  <rect x="20" y="20" width="760" height="560" fill="none" stroke="#238636" stroke-width="3" rx="15"/>
+  <rect x="35" y="35" width="730" height="530" fill="none" stroke="#238636" stroke-width="1" rx="10"/>
+  
+  <!-- Header -->
+  <text x="400" y="80" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#238636">
+    CERTIFICADO DE CONCLUSÃO
+  </text>
+  
+  <text x="400" y="110" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#8b949e">
+    Desafio Descomplicando GitHub Actions
+  </text>
+  
+  <!-- Linha decorativa -->
+  <line x1="150" y1="140" x2="650" y2="140" stroke="#238636" stroke-width="2"/>
+  
+  <!-- Conteúdo principal -->
+  <text x="400" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#f0f6fc">
+    Este certificado atesta que
+  </text>
+  
+  <text x="400" y="240" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#f0f6fc">
+    MANOEL
+  </text>
+  
+  <text x="400" y="280" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#f0f6fc">
+    concluiu com sucesso o desafio
+  </text>
+  
+  <text x="400" y="320" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#238636">
+    Desafio 02 - Testes Automatizados
+  </text>
+  
+  <!-- Competências -->
+  <text x="400" y="370" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#f0f6fc">
+    COMPETÊNCIAS DESENVOLVIDAS:
+  </text>
+  
+  <text x="400" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#8b949e">
+    ✓ Automação de testes  ✓ Cobertura mínima 80%
+  </text>
+  <text x="400" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#8b949e">
+    ✓ Execução de Jest  ✓ Relatório e validação de cobertura
+  </text>
+  
+  
+  <!-- Footer -->
+  <text x="200" y="530" font-family="Arial, sans-serif" font-size="12" fill="#8b949e">
+    Data: 29 de setembro de 2025
+  </text>
+  
+  <text x="600" y="530" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#8b949e">
+    LINUXtips
+  </text>
+  
+  <text x="400" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#8b949e">
+    Certificado gerado automaticamente • LINUXtips
+  </text>
+</svg>

@@ -7,7 +7,8 @@
     "start": "node server.js",
     "build": "echo 'Build completed successfully!'",
     "tests": "jest --coverage",
-    "posttests": "mkdir -p .nyc_output && cp coverage/coverage-final.json .nyc_output/out.json"
+    "posttests": "node -e \"require('fs').mkdirSync('.nyc_output',{recursive:true});require('fs').copyFileSync('coverage/coverage-final.json','.nyc_output/out.json')\"",
+    "coverage:gate": "node coverage-gate.js"
   },
   "keywords": [
     "github-actions",
