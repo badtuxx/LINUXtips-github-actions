@@ -20,11 +20,48 @@ jobs:
       - name: "Checkout do código"
         uses: actions/checkout@v4
 
-      # INSIRA AQUI A LÓGICA PARA RODAR OS TESTES E VERIFICAR A COBERTURA
-      ###
-      ###
-      ###
+      # LOGICA DE TESTES
+      - name: "Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
+      - name: "Instalar dependências"
+        run: npm ci
+
+      - name: "Rodar testes com cobertura"
+        run: npm run tests
+
+      - name: "Verificar cobertura mínima"
+        run: |
+          COVERAGE=$(npx nyc report --reporter=text-summary | grep -oP 'Statements\s*:\s*\K[0-9\.]+(?=%)' | head -1)
+          echo "Cobertura atual: $COVERAGE%"
+          echo "Mínimo exigido: ${{ env.COVERAGE_MIN }}%"
+          
+          if [ -z "$COVERAGE" ]; then
+            echo "❌ Não foi possível extrair a cobertura!"
+            exit 1
+          fi
+          
+          node -e "
+          const coverage = parseFloat('$COVERAGE');
+          const minimo = ${{ env.COVERAGE_MIN }};
+          if (coverage >= minimo) {
+            console.log('✅ Cobertura aprovada: ' + coverage + '%');
+            process.exit(0);
+          } else {
+            console.log('❌ Cobertura abaixo do mínimo: ' + coverage + '% < ' + minimo + '%');
+            process.exit(1);
+          }
+          "
+
+      - name: "Upload do relatório de cobertura"
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+    
       - name: "Extrair porcentagem de cobertura" # Esse step será validado pelo desafio, não altere o nome. No final, ele deve gerar o output "coverage" com a porcentagem de cobertura.
         id: coverage
         run: |

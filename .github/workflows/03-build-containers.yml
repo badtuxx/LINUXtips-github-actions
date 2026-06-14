@@ -20,8 +20,8 @@ jobs:
     if: #????
     runs-on: ubuntu-latest
 
-    steps:
-      # AQUI VAI O CÓDIGO DO DESAFIO :)
+    # steps:
+    #   # AQUI VAI O CÓDIGO DO DESAFIO :)
 
   generate-certificate: # DAQUI PARA BAIXO, NÃO ALTERAR
     name: "Desafio Nível 3 - Certificado"
